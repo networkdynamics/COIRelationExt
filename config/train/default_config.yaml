@@ -1,0 +1,9 @@
+dataset:
+  train_path: ''
+  valid_path: ''
+t5:
+  model: 't5-small'
+random_seed: 100
+total_steps: 10
+gpus: 0
+batch_size: 16

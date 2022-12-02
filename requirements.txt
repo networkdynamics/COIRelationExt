@@ -4,3 +4,4 @@ pandas==1.5.2
 tqdm==4.64.1
 pytorch-lightning==1.8.3.post1
 dataset==1.5.2
+sentencepiece==0.1.97

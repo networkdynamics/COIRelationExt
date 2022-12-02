@@ -1,0 +1,6 @@
+dataset:
+  train_path: ''
+  valid_path: ''
+  train_output_path: ''
+  valid_output_path: ''
+generate_entities: false

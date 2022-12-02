@@ -228,3 +228,7 @@ cython_debug/
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/relationship_extraction.iml
 /.idea/vcs.xml
+/config/*/*my_config.yaml
+
+/data/*
+/outputs/
