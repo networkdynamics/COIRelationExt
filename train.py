@@ -1,14 +1,12 @@
-import hydra
-import torch
-import pytorch_lightning as pl
-import numpy as np
 import logging
 import random
 
-from omegaconf import DictConfig, OmegaConf
+import hydra
+import numpy as np
+import torch
+from omegaconf import DictConfig
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
-from torch.utils.data import DataLoader
 
 from data import REDataModule
 from model import T5FineTuneModel

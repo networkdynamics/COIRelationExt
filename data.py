@@ -1,13 +1,13 @@
 import gc
 import json
 from dataclasses import dataclass, field
-from typing import List, T_co, Dict, Iterator
+from typing import List, T_co, Dict
 from collections import Counter
 import pytorch_lightning as plt
 import torch
 import logging
 import math
-from torch.utils.data import Dataset, DataLoader, Sampler, WeightedRandomSampler
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from transformers import T5Tokenizer
 
 
@@ -15,6 +15,7 @@ from transformers import T5Tokenizer
 class Example:
     question: str = field(default=None)
     answer: str = field(default=None)
+
 
 class REDataset(Dataset):
     def __init__(self, max_token: int, model_name: str):
@@ -28,7 +29,7 @@ class REDataset(Dataset):
     def __getitem__(self, index) -> T_co:
         question = self.tokenizer(self.examples[index].question).input_ids
         if len(question) > self.max_token:
-            question = question[:self.max_token-1] + [self.tokenizer.eos_token_id]
+            question = question[:self.max_token - 1] + [self.tokenizer.eos_token_id]
         if len(self.examples[index].answer) > self.max_token:
             logging.info(f'Long target detected: {len(self.examples[index].answer)}')
         return {
@@ -96,15 +97,7 @@ class REDataModule(plt.LightningDataModule):
                 ex = Example(question=jsonline['question'], answer=jsonline['answer'])
                 valid_ex.append(ex)
         self.valid_data.init_data(valid_ex)
-    def get_obj(self):
-        objs = []
-        for obj in gc.get_objects():
-            try:
-                if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-                    objs.append((type(obj), obj.size()))
-            except:
-                pass
-        return Counter(objs)
+
     def collate_fn(self, batch: List) -> Dict:
         pad_token_id = batch[0]['pad_token_id']
         src_max_seq = max([len(ex['question']) for ex in batch])
@@ -119,7 +112,7 @@ class REDataModule(plt.LightningDataModule):
             attention_mask[idx, :len(ex['question'])] = torch.ones(len(ex['question']))
             tgt_tensor[idx, :len(ex['answer'])] = torch.tensor(ex['answer'], dtype=torch.long)
             tgt_attention_mask[idx, :len(ex['answer'])] = torch.ones(len(ex['answer']))
-        # objs = self.get_obj()
+
         return {
             'src_tensor': src_tensor,
             'attention_mask': attention_mask,

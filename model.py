@@ -1,5 +1,3 @@
-import gc
-from collections import Counter
 from typing import Union, Any, Callable, Optional
 
 import pytorch_lightning as pl
@@ -13,29 +11,18 @@ class T5FineTuneModel(pl.LightningModule):
 
     def __init__(self, model_name, lr_rate, eps, num_training_step):
         super().__init__()
+        self.opt = None
+        self.lr_scheduler = None
         self.model = T5ForConditionalGeneration.from_pretrained(model_name)
         self.tokenizer = T5Tokenizer.from_pretrained(model_name)
         self.lr_rate = lr_rate
         self.eps = eps
         self.num_training_step = num_training_step
 
-    def get_dataset(tokenizer, type_path, args):
-        pass
-
     def forward(self, input_ids, attention_mask=None, decoder_input_ids=None,
                 decoder_attention_mask=None, lm_labels=None):
         return self.model(input_ids, attention_mask=attention_mask, decoder_input_ids=decoder_input_ids,
                           labels=lm_labels)
-
-    def get_obj(self):
-        objs = []
-        for obj in gc.get_objects():
-            try:
-                if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-                    objs.append((type(obj), obj.size()))
-            except:
-                pass
-        return Counter(objs)
 
     def training_step(self, batch, batch_idx):
         model_output = self(
