@@ -36,12 +36,15 @@ def main(cfg: DictConfig) -> None:
         model_name=cfg.train.t5.model,
         train_path=cfg.train.dataset.train_path,
         valid_path=cfg.train.dataset.valid_path,
-        batch_size=cfg.train.batch_size,
-        max_token=cfg.train.max_token
+        batch_size=cfg.train.dataset.batch_size,
+        max_token=cfg.train.dataset.max_token,
+        num_workers=cfg.train.dataset.num_workers,
+        weighted=cfg.train.dataset.weighted_data,
+        alpha=cfg.train.dataset.weight_alpha
     )
     logger = TensorBoardLogger("tb_logs", name="my_model")
     num_train_ex = len(open(cfg.train.dataset.train_path).readlines())
-    min_steps = num_train_ex // cfg.train.batch_size // cfg.train.accumulate_grad_batches * cfg.train.min_epochs
+    min_steps = num_train_ex // cfg.train.dataset.batch_size // cfg.train.accumulate_grad_batches * cfg.train.min_epochs
     logging.info(f'Min training steps: {min_steps}')
     if cfg.train.fp_16:
         precision = 16

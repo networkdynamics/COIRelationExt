@@ -6,7 +6,8 @@ from collections import Counter
 import pytorch_lightning as plt
 import torch
 import logging
-from torch.utils.data import Dataset, DataLoader, Sampler
+import math
+from torch.utils.data import Dataset, DataLoader, Sampler, WeightedRandomSampler
 from transformers import T5Tokenizer
 
 
@@ -50,15 +51,37 @@ class REDataModule(plt.LightningDataModule):
                  train_path: str,
                  valid_path: str,
                  batch_size: int,
-                 max_token: int):
+                 max_token: int,
+                 num_workers: int,
+                 weighted: bool,
+                 alpha: float):
         super(REDataModule, self).__init__()
         self.train_path = train_path
         self.valid_path = valid_path
         self.train_data = REDataset(max_token=max_token, model_name=model_name)
         self.valid_data = REDataset(max_token=max_token, model_name=model_name)
         self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.weighted = weighted
+        self.alpha = alpha
+        self.train_weights = []
 
     def setup(self, stage=None) -> None:
+        if self.weighted:
+            train_class = []
+            with open(self.train_path) as f:
+                for line in f:
+                    jsonline = json.loads(line)
+                    train_class.append(jsonline['answer'].strip())
+            class_counter = Counter(train_class)
+            class_weights = {}
+            for key, item in class_counter.items():
+                class_weights[key] = math.pow(item / len(train_class), self.alpha)
+            normalize_den = sum([item for _, item in class_weights.items()])
+            for key, item in class_counter.items():
+                class_weights[key] = (class_weights[key] / normalize_den) / class_counter[key]
+            for ex in train_class:
+                self.train_weights.append(class_weights[ex])
         train_ex = []
         valid_ex = []
         with open(self.train_path) as f:
@@ -105,9 +128,15 @@ class REDataModule(plt.LightningDataModule):
         }
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_data, shuffle=True, pin_memory=True,num_workers=16,
+        if self.weighted:
+            weighted_random_sampler = WeightedRandomSampler(
+                weights=self.train_weights, num_samples=len(self.train_data))
+            return DataLoader(self.train_data, sampler=weighted_random_sampler, pin_memory=True,
+                              num_workers=self.num_workers, collate_fn=self.collate_fn,
+                              batch_size=self.batch_size)
+        return DataLoader(self.train_data, shuffle=True, pin_memory=True, num_workers=self.num_workers,
                           collate_fn=self.collate_fn, batch_size=self.batch_size)
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.valid_data, shuffle=True, pin_memory=True,num_workers=16,
+        return DataLoader(self.valid_data, shuffle=False, pin_memory=True, num_workers=self.num_workers,
                           collate_fn=self.collate_fn, batch_size=self.batch_size)
