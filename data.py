@@ -1,10 +1,12 @@
+import gc
 import json
 from dataclasses import dataclass, field
-from typing import List, T_co, Dict
+from typing import List, T_co, Dict, Iterator
+from collections import Counter
 import pytorch_lightning as plt
 import torch
 import logging
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Sampler
 from transformers import T5Tokenizer
 
 
@@ -12,7 +14,6 @@ from transformers import T5Tokenizer
 class Example:
     question: str = field(default=None)
     answer: str = field(default=None)
-
 
 class REDataset(Dataset):
     def __init__(self, max_token: int, model_name: str):
@@ -48,16 +49,16 @@ class REDataModule(plt.LightningDataModule):
                  model_name: str,
                  train_path: str,
                  valid_path: str,
-                 batch_size: int):
+                 batch_size: int,
+                 max_token: int):
         super(REDataModule, self).__init__()
         self.train_path = train_path
         self.valid_path = valid_path
-        self.train_data = REDataset(max_token=512, model_name=model_name)
-        self.valid_data = REDataset(max_token=512, model_name=model_name)
+        self.train_data = REDataset(max_token=max_token, model_name=model_name)
+        self.valid_data = REDataset(max_token=max_token, model_name=model_name)
         self.batch_size = batch_size
-        self.read_file()
 
-    def read_file(self) -> None:
+    def setup(self, stage=None) -> None:
         train_ex = []
         valid_ex = []
         with open(self.train_path) as f:
@@ -72,7 +73,15 @@ class REDataModule(plt.LightningDataModule):
                 ex = Example(question=jsonline['question'], answer=jsonline['answer'])
                 valid_ex.append(ex)
         self.valid_data.init_data(valid_ex)
-
+    def get_obj(self):
+        objs = []
+        for obj in gc.get_objects():
+            try:
+                if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                    objs.append((type(obj), obj.size()))
+            except:
+                pass
+        return Counter(objs)
     def collate_fn(self, batch: List) -> Dict:
         pad_token_id = batch[0]['pad_token_id']
         src_max_seq = max([len(ex['question']) for ex in batch])
@@ -87,17 +96,18 @@ class REDataModule(plt.LightningDataModule):
             attention_mask[idx, :len(ex['question'])] = torch.ones(len(ex['question']))
             tgt_tensor[idx, :len(ex['answer'])] = torch.tensor(ex['answer'], dtype=torch.long)
             tgt_attention_mask[idx, :len(ex['answer'])] = torch.ones(len(ex['answer']))
+        # objs = self.get_obj()
         return {
             'src_tensor': src_tensor,
             'attention_mask': attention_mask,
-            'src_max_seq': src_max_seq,
             'tgt_tensor': tgt_tensor,
             'tgt_attention_mask': tgt_attention_mask,
-            'tgt_max_seq': tgt_max_seq,
         }
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_data, shuffle=True, collate_fn=self.collate_fn, batch_size=self.batch_size)
+        return DataLoader(self.train_data, shuffle=True, pin_memory=True,num_workers=16,
+                          collate_fn=self.collate_fn, batch_size=self.batch_size)
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.valid_data, shuffle=True, collate_fn=self.collate_fn, batch_size=self.batch_size)
+        return DataLoader(self.valid_data, shuffle=True, pin_memory=True,num_workers=16,
+                          collate_fn=self.collate_fn, batch_size=self.batch_size)
