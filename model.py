@@ -9,15 +9,18 @@ from transformers import T5ForConditionalGeneration, T5Tokenizer, AdamW, get_lin
 
 class T5FineTuneModel(pl.LightningModule):
 
-    def __init__(self, model_name, lr_rate, eps, num_training_step):
+    def __init__(self, model_name, lr_rate=None, eps=None, num_training_step=None):
         super().__init__()
         self.opt = None
         self.lr_scheduler = None
         self.model = T5ForConditionalGeneration.from_pretrained(model_name)
         self.tokenizer = T5Tokenizer.from_pretrained(model_name)
-        self.lr_rate = lr_rate
-        self.eps = eps
-        self.num_training_step = num_training_step
+        if lr_rate:
+            self.lr_rate = lr_rate
+        if eps:
+            self.eps = eps
+        if num_training_step:
+            self.num_training_step = num_training_step
 
     def forward(self, input_ids, attention_mask=None, decoder_input_ids=None,
                 decoder_attention_mask=None, lm_labels=None):
@@ -33,12 +36,18 @@ class T5FineTuneModel(pl.LightningModule):
         return model_output.loss
 
     def validation_step(self, batch, batch_idx):
-        loss = self(
+        model_output = self(
             input_ids=batch['src_tensor'],
             attention_mask=batch['attention_mask'],
             lm_labels=batch['tgt_tensor'],
             decoder_attention_mask=batch['tgt_attention_mask'])
-        return {"val_loss": loss}
+        self.log("val_loss", model_output.loss)
+        return {"val_loss": model_output.loss}
+
+    def predict_step(self, batch, batch_idx,  dataloader_idx: int = 0) -> Any:
+        outputs = self.model.generate(batch['src_tensor'], num_beams=5)
+        preds = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        return preds
 
     def configure_optimizers(self):
         model = self.model

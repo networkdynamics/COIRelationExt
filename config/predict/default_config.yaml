@@ -1,0 +1,3 @@
+dataset:
+  train_path: '/home/ndg/users/hhardy1/projects/relationship_extraction/data/train.json'
+  valid_path: '/home/ndg/users/hhardy1/projects/relationship_extraction/data/valid.json'

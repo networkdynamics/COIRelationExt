@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from omegaconf import DictConfig
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 
 from data import REDataModule
@@ -49,11 +50,16 @@ def main(cfg: DictConfig) -> None:
         precision = 16
     else:
         precision = 32
+    lr_monitor = LearningRateMonitor(logging_interval='step')
+    checkpoint_callback = ModelCheckpoint(monitor='val_loss', save_top_k=5,
+                                          filename=cfg.train.ckpt_prefix + '--{epoch}-{val_loss:.2f}',
+                                          every_n_epochs=1)
     trainer = Trainer(
                       logger=logger,
                       min_steps=min_steps,
+                      max_epochs=3,
                       num_sanity_val_steps=2,
-                      gpus=cfg.train.gpus,
+                      gpus=cfg.train.gpus,callbacks=[checkpoint_callback, lr_monitor],
                       accumulate_grad_batches=cfg.train.accumulate_grad_batches,
                       gradient_clip_val=cfg.train.max_grad_norm,
                       precision=precision
