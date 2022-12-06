@@ -28,13 +28,14 @@ class REDataset(Dataset):
 
     def __getitem__(self, index) -> T_co:
         question = self.tokenizer(self.examples[index].question).input_ids
+        answer = self.tokenizer(self.examples[index].answer).input_ids
         if len(question) > self.max_token:
             question = question[:self.max_token - 1] + [self.tokenizer.eos_token_id]
         if len(self.examples[index].answer) > self.max_token:
-            logging.info(f'Long target detected: {len(self.examples[index].answer)}')
+            answer = answer[:self.max_token - 1] + [self.tokenizer.eos_token_id]
         return {
             'question': question,
-            'answer': self.tokenizer(self.examples[index].answer).input_ids,
+            'answer': answer,
             'pad_token_id': self.tokenizer.pad_token_id
         }
 
@@ -55,7 +56,8 @@ class REDataModule(plt.LightningDataModule):
                  max_token: int,
                  num_workers: int,
                  weighted: bool,
-                 alpha: float):
+                 alpha: float,
+                 debug: bool):
         super(REDataModule, self).__init__()
         self.train_path = train_path
         self.valid_path = valid_path
@@ -66,6 +68,7 @@ class REDataModule(plt.LightningDataModule):
         self.weighted = weighted
         self.alpha = alpha
         self.train_weights = []
+        self.debug = debug
 
     def setup(self, stage=None) -> None:
         if self.weighted:
@@ -90,12 +93,18 @@ class REDataModule(plt.LightningDataModule):
                 jsonline = json.loads(line)
                 ex = Example(question=jsonline['question'], answer=jsonline['answer'])
                 train_ex.append(ex)
+        if self.debug:
+            train_ex = train_ex[:500]
+            if self.weighted:
+                self.train_weights = self.train_weights[:500]
         self.train_data.init_data(train_ex)
         with open(self.valid_path) as f:
             for line in f:
                 jsonline = json.loads(line)
                 ex = Example(question=jsonline['question'], answer=jsonline['answer'])
                 valid_ex.append(ex)
+        if self.debug:
+            valid_ex = valid_ex[:500]
         self.valid_data.init_data(valid_ex)
 
     def collate_fn(self, batch: List) -> Dict:

@@ -38,7 +38,8 @@ def main(cfg: DictConfig) -> None:
         max_token=cfg.train.dataset.max_token,
         num_workers=cfg.train.dataset.num_workers,
         weighted=cfg.train.dataset.weighted_data,
-        alpha=cfg.train.dataset.weight_alpha
+        alpha=cfg.train.dataset.weight_alpha,
+        debug=cfg.train.dataset.debug
     )
     logger = TensorBoardLogger("tb_logs", name="my_model")
     num_train_ex = len(open(cfg.train.dataset.train_path).readlines())

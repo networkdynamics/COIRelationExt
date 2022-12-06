@@ -32,11 +32,6 @@ class T5FineTuneModel(pl.LightningModule):
             decoder_attention_mask=batch['tgt_attention_mask'])
         return model_output.loss
 
-    def training_epoch_end(self, outputs):
-        avg_train_loss = torch.stack([x["loss"] for x in outputs]).mean().detach()
-        tensorboard_logs = {"avg_train_loss": avg_train_loss}
-        return {"avg_train_loss": avg_train_loss, "log": tensorboard_logs, 'progress_bar': tensorboard_logs}
-
     def validation_step(self, batch, batch_idx):
         loss = self(
             input_ids=batch['src_tensor'],
