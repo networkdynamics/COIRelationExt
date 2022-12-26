@@ -1,0 +1,6 @@
+dataset:
+  predict_path: ''
+  prediction_path: ''
+  eval_path: ''
+no_unknown: False
+two_classes: True

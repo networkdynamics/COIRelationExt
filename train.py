@@ -7,7 +7,6 @@ import torch
 from omegaconf import DictConfig
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
-from pytorch_lightning.loggers import TensorBoardLogger
 
 from data import REDataModule
 from model import T5FineTuneModel
@@ -20,6 +19,7 @@ def set_seed(seed):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
 
 @hydra.main(version_base=None, config_path='config', config_name='config')
 def main(cfg: DictConfig) -> None:
@@ -40,9 +40,9 @@ def main(cfg: DictConfig) -> None:
         num_workers=cfg.train.dataset.num_workers,
         weighted=cfg.train.dataset.weighted_data,
         alpha=cfg.train.dataset.weight_alpha,
+        two_classes=cfg.train.dataset.two_classes,
         debug=cfg.train.dataset.debug
     )
-    logger = TensorBoardLogger("tb_logs", name="my_model")
     num_train_ex = len(open(cfg.train.dataset.train_path).readlines())
     min_steps = num_train_ex // cfg.train.dataset.batch_size // cfg.train.accumulate_grad_batches * cfg.train.min_epochs
     logging.info(f'Min training steps: {min_steps}')
@@ -52,19 +52,20 @@ def main(cfg: DictConfig) -> None:
         precision = 32
     lr_monitor = LearningRateMonitor(logging_interval='step')
     checkpoint_callback = ModelCheckpoint(monitor='val_loss', save_top_k=5,
+                                          dirpath='checkpoints/',
                                           filename=cfg.train.ckpt_prefix + '--{epoch}-{val_loss:.2f}',
                                           every_n_epochs=1)
     trainer = Trainer(
-                      logger=logger,
-                      min_steps=min_steps,
-                      max_epochs=3,
-                      num_sanity_val_steps=2,
-                      gpus=cfg.train.gpus,callbacks=[checkpoint_callback, lr_monitor],
-                      accumulate_grad_batches=cfg.train.accumulate_grad_batches,
-                      gradient_clip_val=cfg.train.max_grad_norm,
-                      precision=precision
+        min_steps=min_steps,
+        max_epochs=1,
+        num_sanity_val_steps=2,
+        gpus=cfg.train.gpus, callbacks=[checkpoint_callback, lr_monitor],
+        accumulate_grad_batches=cfg.train.accumulate_grad_batches,
+        gradient_clip_val=cfg.train.max_grad_norm,
+        precision=precision
     )
     trainer.fit(model=model, datamodule=data_module)
+
 
 if __name__ == '__main__':
     main()

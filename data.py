@@ -1,12 +1,11 @@
-import gc
 import json
+import math
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import List, T_co, Dict
-from collections import Counter
+
 import pytorch_lightning as plt
 import torch
-import logging
-import math
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from transformers import T5Tokenizer
 
@@ -80,6 +79,7 @@ class REDataModule(plt.LightningDataModule):
                  num_workers: int,
                  weighted: bool,
                  alpha: float,
+                 two_classes: bool,
                  debug: bool):
         super(REDataModule, self).__init__()
         self.train_path = train_path
@@ -91,7 +91,15 @@ class REDataModule(plt.LightningDataModule):
         self.weighted = weighted
         self.alpha = alpha
         self.train_weights = []
+        self.two_classes = two_classes
         self.debug = debug
+
+    def maybe_convert_to_two_classes(self, answer: str) -> str:
+        if self.two_classes:
+            if 'yes' in answer.lower().strip():
+                return 'yes'
+            else:
+                return 'no'
 
     def setup(self, stage=None) -> None:
         if self.weighted:
@@ -99,7 +107,7 @@ class REDataModule(plt.LightningDataModule):
             with open(self.train_path) as f:
                 for line in f:
                     jsonline = json.loads(line)
-                    train_class.append(jsonline['answer'].strip())
+                    train_class.append(self.maybe_convert_to_two_classes(jsonline['answer']))
             class_counter = Counter(train_class)
             class_weights = {}
             for key, item in class_counter.items():
@@ -114,7 +122,8 @@ class REDataModule(plt.LightningDataModule):
         with open(self.train_path) as f:
             for line in f:
                 jsonline = json.loads(line)
-                ex = Example(question=jsonline['question'], answer=jsonline['answer'])
+                ex = Example(question=jsonline['question'],
+                             answer=self.maybe_convert_to_two_classes(jsonline['answer']))
                 train_ex.append(ex)
         if self.debug:
             train_ex = train_ex[:500]
@@ -124,7 +133,8 @@ class REDataModule(plt.LightningDataModule):
         with open(self.valid_path) as f:
             for line in f:
                 jsonline = json.loads(line)
-                ex = Example(question=jsonline['question'], answer=jsonline['answer'])
+                ex = Example(question=jsonline['question'],
+                             answer=self.maybe_convert_to_two_classes(jsonline['answer']))
                 valid_ex.append(ex)
         if self.debug:
             valid_ex = valid_ex[:500]
@@ -135,11 +145,11 @@ class REDataModule(plt.LightningDataModule):
             weighted_random_sampler = WeightedRandomSampler(
                 weights=self.train_weights, num_samples=len(self.train_data))
             return DataLoader(self.train_data, sampler=weighted_random_sampler, pin_memory=True,
-                              num_workers=self.num_workers, collate_fn=collate_fn,
+                              num_workers=self.num_workers, collate_fn=collate_fn, persistent_workers=True,
                               batch_size=self.batch_size)
         return DataLoader(self.train_data, shuffle=True, pin_memory=True, num_workers=self.num_workers,
-                          collate_fn=collate_fn, batch_size=self.batch_size)
+                          collate_fn=collate_fn, batch_size=self.batch_size, persistent_workers=True)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.valid_data, shuffle=False, pin_memory=True, num_workers=self.num_workers,
-                          collate_fn=collate_fn, batch_size=self.batch_size)
+                          collate_fn=collate_fn, batch_size=self.batch_size, persistent_workers=True)

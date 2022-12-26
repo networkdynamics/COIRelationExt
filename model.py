@@ -1,7 +1,6 @@
 from typing import Union, Any, Callable, Optional
 
 import pytorch_lightning as pl
-import torch.optim
 from pytorch_lightning.core.optimizer import LightningOptimizer
 from torch.optim import Optimizer
 from transformers import T5ForConditionalGeneration, T5Tokenizer, AdamW, get_linear_schedule_with_warmup
@@ -9,11 +8,14 @@ from transformers import T5ForConditionalGeneration, T5Tokenizer, AdamW, get_lin
 
 class T5FineTuneModel(pl.LightningModule):
 
-    def __init__(self, model_name, lr_rate=None, eps=None, num_training_step=None):
+    def __init__(self, model_name, lr_rate=None, eps=None, num_training_step=None, max_length=None, beam=None):
         super().__init__()
         self.opt = None
         self.lr_scheduler = None
-        self.model = T5ForConditionalGeneration.from_pretrained(model_name)
+        self.model = T5ForConditionalGeneration.from_pretrained(
+            model_name
+        )
+        # self.model.gradient_checkpointing_enable()
         self.tokenizer = T5Tokenizer.from_pretrained(model_name)
         if lr_rate:
             self.lr_rate = lr_rate
@@ -21,11 +23,15 @@ class T5FineTuneModel(pl.LightningModule):
             self.eps = eps
         if num_training_step:
             self.num_training_step = num_training_step
+        if max_length:
+            self.max_length = max_length
+        if beam:
+            self.beam = beam
 
     def forward(self, input_ids, attention_mask=None, decoder_input_ids=None,
                 decoder_attention_mask=None, lm_labels=None):
         return self.model(input_ids, attention_mask=attention_mask, decoder_input_ids=decoder_input_ids,
-                          labels=lm_labels)
+                          labels=lm_labels, use_cache=False)
 
     def training_step(self, batch, batch_idx):
         model_output = self(
@@ -45,7 +51,7 @@ class T5FineTuneModel(pl.LightningModule):
         return {"val_loss": model_output.loss}
 
     def predict_step(self, batch, batch_idx,  dataloader_idx: int = 0) -> Any:
-        outputs = self.model.generate(batch['src_tensor'], num_beams=5)
+        outputs = self.model.generate(batch['src_tensor'], num_beams=self.beam, max_new_tokens=self.max_length)
         preds = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         return preds
 
@@ -79,5 +85,4 @@ class T5FineTuneModel(pl.LightningModule):
                        using_lbfgs: bool = False):
         optimizer.step(closure=optimizer_closure)
         optimizer.zero_grad()
-
         self.lr_scheduler.step()

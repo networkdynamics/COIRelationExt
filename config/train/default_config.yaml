@@ -1,9 +1,24 @@
 dataset:
   train_path: ''
   valid_path: ''
+  weighted_data: True
+  weight_alpha: 0.75
+  batch_size: 4
+  max_token: 512
+  num_workers: 16
+  two_classes: False
+  debug: False
 t5:
-  model: 't5-small'
-random_seed: 100
-total_steps: 10
-gpus: 0
-batch_size: 16
+  model: 'google/flan-t5-base'
+max_token: 512
+random_seed: 300
+gpus: 1
+optimizer:
+  lr_rate: 3e-4
+  eps: 1e-8
+min_steps: 10000
+min_epochs: 1
+accumulate_grad_batches: 16
+fp_16: False
+max_grad_norm: 0.5
+ckpt_prefix: 'flan_t5_base'

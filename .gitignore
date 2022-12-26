@@ -234,3 +234,4 @@ cython_debug/
 /outputs/
 /.idea/deployment.xml
 /.idea/webServers.xml
+/scripts/

@@ -1,8 +1,9 @@
-import logging
-from typing import List, Tuple
-import tqdm
-import hydra
 import json
+import logging
+from typing import List
+
+import hydra
+import tqdm
 from omegaconf import DictConfig
 
 
@@ -10,6 +11,8 @@ def read_raw(path: str, gen_entities: bool) -> List:
     with open(path) as f:
         sources = []
         targets = []
+        sources_entity = []
+        targets_entity = []
         for line in tqdm.tqdm(f.readlines()):
             data = json.loads(line)
             data['text']
@@ -46,8 +49,11 @@ def read_raw(path: str, gen_entities: bool) -> List:
                     targets.append(cells[11])
                     targets.append(cells[12])
             if gen_entities:
-                sources.append(f'question: what are all the entities? context: {data["text"]}')
-                targets.append(', '.join(entities))
+                sources_entity.append(f'question: what are all the entities? context: {data["text"]}')
+                targets_entity.append(', '.join(entities))
+        if gen_entities:
+            sources = sources_entity
+            targets = targets_entity
         output_data = []
         for src, tgt in zip(sources, targets):
             output_data.append(json.dumps({

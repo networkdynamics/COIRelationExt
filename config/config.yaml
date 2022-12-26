@@ -2,3 +2,4 @@ defaults:
   - train: default_config
   - preprocess: default_config
   - predict: default_config
+  - eval: default_config
