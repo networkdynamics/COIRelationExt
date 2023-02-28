@@ -51,28 +51,34 @@ def main(cfg: DictConfig) -> None:
                 if 'unknown' in answer:
                     answer = 'no'
             true_answers.append(answer.strip())
-            if 'perform analysis in the study? context' in jsonline['question']:
-                question_classes.append('analysis')
-            elif 'collect data in the study? context' in jsonline['question']:
-                question_classes.append('collect data')
-            elif 'coordinate the study? context' in jsonline['question']:
-                question_classes.append('coordinate')
-            elif 'design the study? context' in jsonline['question']:
-                question_classes.append('design')
-            elif 'fund the study? context' in jsonline['question']:
-                question_classes.append('fund')
-            elif 'participate in the study? context' in jsonline['question']:
-                question_classes.append('participate')
-            elif 'review the study? context' in jsonline['question']:
-                question_classes.append('review')
-            elif 'supply data to the study? context' in jsonline['question']:
-                question_classes.append('supply data')
-            elif 'supply the study? context' in jsonline['question']:
-                question_classes.append('supply')
-            elif 'write the study? context' in jsonline['question']:
-                question_classes.append('write')
-            elif 'support the study? context' in jsonline['question']:
-                question_classes.append('support')
+            if cfg.eval.collapse:
+                if 'actively involved in the study? context' in jsonline['question']:
+                    question_classes.append('active')
+                elif 'passively involved in the study? context' in jsonline['question']:
+                    question_classes.append('passive')
+            else:
+                if 'perform analysis in the study? context' in jsonline['question']:
+                    question_classes.append('analysis')
+                elif 'collect data in the study? context' in jsonline['question']:
+                    question_classes.append('collect data')
+                elif 'coordinate the study? context' in jsonline['question']:
+                    question_classes.append('coordinate')
+                elif 'design the study? context' in jsonline['question']:
+                    question_classes.append('design')
+                elif 'fund the study? context' in jsonline['question']:
+                    question_classes.append('fund')
+                elif 'participate in the study? context' in jsonline['question']:
+                    question_classes.append('participate')
+                elif 'review the study? context' in jsonline['question']:
+                    question_classes.append('review')
+                elif 'supply data to the study? context' in jsonline['question']:
+                    question_classes.append('supply data')
+                elif 'supply the study? context' in jsonline['question']:
+                    question_classes.append('supply')
+                elif 'write the study? context' in jsonline['question']:
+                    question_classes.append('write')
+                elif 'support the study? context' in jsonline['question']:
+                    question_classes.append('support')
     if cfg.eval.no_unknown:
         answer_a_classes = list(set(true_answers) - {'unknown'})
     else:

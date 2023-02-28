@@ -18,6 +18,7 @@ optimizer:
   eps: 1e-8
 min_steps: 10000
 min_epochs: 1
+max_epochs: 2
 accumulate_grad_batches: 16
 fp_16: False
 max_grad_norm: 0.5

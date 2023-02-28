@@ -229,7 +229,7 @@ cython_debug/
 /.idea/relationship_extraction.iml
 /.idea/vcs.xml
 /config/*/*my_config.yaml
-
+/config/*/*/*my_config.yaml
 /data/*
 /outputs/
 /.idea/deployment.xml

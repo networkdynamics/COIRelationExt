@@ -100,6 +100,7 @@ class REDataModule(plt.LightningDataModule):
                 return 'yes'
             else:
                 return 'no'
+        return answer
 
     def setup(self, stage=None) -> None:
         if self.weighted:

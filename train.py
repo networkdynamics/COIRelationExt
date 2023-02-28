@@ -32,7 +32,8 @@ def main(cfg: DictConfig) -> None:
         num_training_step=cfg.train.min_steps
     )
     data_module = REDataModule(
-        model_name=cfg.train.t5.model,
+        model_name='google/flan-t5-base',
+        # model_name=cfg.train.t5.model,
         train_path=cfg.train.dataset.train_path,
         valid_path=cfg.train.dataset.valid_path,
         batch_size=cfg.train.dataset.batch_size,
@@ -53,11 +54,11 @@ def main(cfg: DictConfig) -> None:
     lr_monitor = LearningRateMonitor(logging_interval='step')
     checkpoint_callback = ModelCheckpoint(monitor='val_loss', save_top_k=5,
                                           dirpath='checkpoints/',
-                                          filename=cfg.train.ckpt_prefix + '--{epoch}-{val_loss:.2f}',
+                                          filename=cfg.train.ckpt_prefix + '--{epoch}-{val_loss:.4f}',
                                           every_n_epochs=1)
     trainer = Trainer(
         min_steps=min_steps,
-        max_epochs=1,
+        max_epochs=cfg.train.max_epochs,
         num_sanity_val_steps=2,
         gpus=cfg.train.gpus, callbacks=[checkpoint_callback, lr_monitor],
         accumulate_grad_batches=cfg.train.accumulate_grad_batches,
