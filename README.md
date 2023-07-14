@@ -81,6 +81,24 @@ Then run `python inference.py inference=default_config.yaml`. This will create t
 
 ## QA for Relation Extraction
 
+### Preprocessing
+
+To preprocess the dataset, edit the config file `config\preprocess\default_config.yaml` as the following:
+    
+```yaml
+dataset:
+  train_path: '[path to train data]/train.study.h.json'
+  valid_path: '[path to valid/test data]\[valid/test].study.h.json'
+  train_output_path: '[path to train data]train.json'
+  valid_output_path: '[path to valid/test data]\[valid/test].json'
+  prediction_path: ''
+  combine: false
+  unlabeled: false
+generate_entities: false
+``` 
+
+Then run `python preprocess.py preprocess=default_config.yaml`. This will create the `[train/valid/test].json` files in the specified paths. 
+
 
 ### Training
 
@@ -88,8 +106,8 @@ To train the model, edit the config file `config\train\default_config.yaml` as t
 
 ```yaml
 dataset:
-  train_path: '[path to train data]/train.entity.json'
-  valid_path: '[path to valid/test data]/[valid/test].entity.json'
+  train_path: '[path to train data]/train.json'
+  valid_path: '[path to valid/test data]/[valid/test].json'
   weighted_data: False
   weight_alpha: 0.0
   batch_size: 4
@@ -122,7 +140,7 @@ To run inference on the model, edit the config file `config\inference\default_co
 
 ```yaml
 dataset:
-  predict_path: '[path for inference output]/std_entity_200_flan_t5_base.txt'
+  predict_path: '[path to valid/test data]/[valid/test].json'
   prediction_path: '[path for inference output]/std_re_two_classes_200_flan_t5_base.txt'
   batch_size: 16
   max_token: 512
