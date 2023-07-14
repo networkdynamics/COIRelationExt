@@ -230,7 +230,8 @@ cython_debug/
 /.idea/vcs.xml
 /config/*/*my_config.yaml
 /config/*/*/*my_config.yaml
-/data/*
+/data/private/*
+/data/*.*
 /outputs/
 /.idea/deployment.xml
 /.idea/webServers.xml

@@ -31,16 +31,22 @@ def get_target_re(cells: List, collapse: bool) -> List:
     active_cells = [cells[1], cells[2], cells[4], cells[6],
                      cells[7], cells[8], cells[9], cells[11]]
     if collapse:
-        total_active = [1 for c in active_cells if 'yes' in c.strip().lower()]
-        total_passive = [1 for c in passive_cells if 'yes' in c.strip().lower()]
-        if sum(total_passive) > 0:
+        total_active_yes = [1 for c in active_cells if 'yes' in c.strip().lower()]
+        total_passive_yes = [1 for c in passive_cells if 'yes' in c.strip().lower()]
+        total_active_no = [1 for c in active_cells if 'no' == c.strip().lower()]
+        total_passive_no = [1 for c in passive_cells if 'no' == c.strip().lower()]
+        if sum(total_passive_yes) > 0:
             targets.append('yes')
-        else:
+        elif sum(total_passive_no) > 0:
             targets.append('no')
-        if sum(total_active) > 0:
+        else:
+            targets.append('unknown')
+        if sum(total_active_yes) > 0:
             targets.append('yes')
-        else:
+        elif sum(total_active_no) > 0:
             targets.append('no')
+        else:
+            targets.append('unknown')
     else:
         for i in range(1, 12):
             targets.append(cells[i])
