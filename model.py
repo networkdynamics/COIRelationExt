@@ -50,7 +50,7 @@ class T5FineTuneModel(pl.LightningModule):
         self.log("val_loss", model_output.loss)
         return {"val_loss": model_output.loss}
 
-    def predict_step(self, batch, batch_idx,  dataloader_idx: int = 0) -> Any:
+    def predict_step(self, batch, batch_idx, dataloader_idx: int = 0) -> Any:
         outputs = self.model.generate(batch['src_tensor'], num_beams=self.beam, max_new_tokens=self.max_length)
         preds = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         return preds
@@ -78,11 +78,7 @@ class T5FineTuneModel(pl.LightningModule):
     def optimizer_step(self, epoch: int,
                        batch_idx: int,
                        optimizer: Union[Optimizer, LightningOptimizer],
-                       optimizer_idx: int = 0,
-                       optimizer_closure: Optional[Callable[[], Any]] = None,
-                       on_tpu: bool = False,
-                       using_native_amp: bool = False,
-                       using_lbfgs: bool = False):
+                       optimizer_closure: Optional[Callable[[], Any]] = None, ):
         optimizer.step(closure=optimizer_closure)
         optimizer.zero_grad()
         self.lr_scheduler.step()

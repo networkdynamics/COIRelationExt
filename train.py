@@ -60,7 +60,10 @@ def main(cfg: DictConfig) -> None:
         min_steps=min_steps,
         max_epochs=cfg.train.max_epochs,
         num_sanity_val_steps=2,
-        gpus=cfg.train.gpus, callbacks=[checkpoint_callback, lr_monitor],
+        accelerator="auto",
+        devices="auto",
+        strategy="auto",
+        callbacks=[checkpoint_callback, lr_monitor],
         accumulate_grad_batches=cfg.train.accumulate_grad_batches,
         gradient_clip_val=cfg.train.max_grad_norm,
         precision=precision
